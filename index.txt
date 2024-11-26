@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring of Claims - PAS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Include jsPDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <!-- Include jsPDF AutoTable plugin -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans leading-normal tracking-normal">
+  <div class="container mx-auto p-6">
+    <!-- Header -->
+    <h1 class="text-3xl font-bold text-gray-700 mb-8">MONITORING OF CLAIMS - PAS</h1>
+
+    <!-- Cards Section -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 mb-8" id="summary-cards">
+      <!-- Summary cards will be dynamically generated -->
+    </div>
+
+    <!-- Search and Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <!-- Export Button -->
+      <div class="flex justify-end mb-4">
+        <button
+          onclick="exportToPDF()"
+          class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600"
+        >
+          Export to PDF
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="flex items-center mb-4">
+        <input
+          type="text"
+          id="search"
+          placeholder="Search"
+          class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          oninput="filterTable()"
+        />
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border-collapse border border-gray-200" id="data-table">
+          <thead>
+            <tr class="bg-blue-500 text-white">
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">DRN</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Name</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Gender</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Place</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Month</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows will be dynamically generated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center mt-4">
+        <div>
+          <label for="rows-per-page" class="mr-2 text-sm">Rows per page:</label>
+          <select
+            id="rows-per-page"
+            class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onchange="changeRowsPerPage()"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let originalData = [];
+    let currentData = [];
+
+    // Fetch summary data from Google Apps Script
+    function fetchSummary() {
+      google.script.run
+        .withSuccessHandler(populateSummary)
+        .getReportSummary();
+    }
+
+    // Populate the summary cards dynamically
+    function populateSummary(summary) {
+      const summaryCards = document.getElementById("summary-cards");
+      summaryCards.innerHTML = "";
+
+      const summaryData = {
+        "Received Claims (Grand Total)": summary.receivedClaims,
+        "For Return": summary.forReturn,
+        "For Computation": summary.forComputation,
+        "Endorsed to the Budget Section": summary.endorsed,
+        "Compliance": summary.compliance,
+        "Complied": summary.complied,
+      };
+
+      Object.entries(summaryData).forEach(([key, value]) => {
+        const card = document.createElement("div");
+        card.classList.add(
+          "bg-gradient-to-r",
+          "from-blue-500",
+          "to-blue-400",
+          "text-white",
+          "shadow",
+          "rounded-lg",
+          "p-4"
+        );
+
+        card.innerHTML = ` 
+          <p class="text-sm">${key}</p>
+          <h2 class="text-3xl font-bold">${value}</h2>
+        `;
+        summaryCards.appendChild(card);
+      });
+    }
+
+    // Fetch data for the table
+    function fetchData() {
+      google.script.run
+        .withSuccessHandler(populateData)
+        .getFormattedSheetData();
+    }
+
+    function populateData(data) {
+      originalData = data;
+      currentData = data.slice(0, 10); // Default to 10 rows
+      populateTable(currentData);
+    }
+
+    function populateTable(data) {
+      const tableBody = document.getElementById("table-body");
+      tableBody.innerHTML = "";
+
+      data.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.classList.add("hover:bg-gray-50");
+
+        tr.innerHTML = `
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.DRN}</td>
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Name}</td>
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Gender}</td>
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Place}</td>
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Type}</td>
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Month}</td>
+          <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Status}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // Filter table based on search input
+    function filterTable() {
+      const searchInput = document.getElementById("search").value.toLowerCase();
+
+      // Filter table data
+      const filteredData = originalData.filter((row) =>
+        Object.values(row).some((value) =>
+          String(value).toLowerCase().includes(searchInput)
+        )
+      );
+      populateTable(filteredData);
+
+      // Optionally, filter the summary data based on search input
+      const filteredSummary = Object.fromEntries(
+        Object.entries(summaryData).filter(([key, value]) =>
+          key.toLowerCase().includes(searchInput) || value.toString().includes(searchInput)
+        )
+      );
+
+      // Optionally, call populateSummary to update the summary cards
+      populateSummary(filteredSummary);
+    }
+
+    // Change rows per page
+    function changeRowsPerPage() {
+      const rowsPerPage = document.getElementById("rows-per-page").value;
+      let dataToShow = [];
+
+      if (rowsPerPage === "all") {
+        dataToShow = originalData; // Show all data
+      } else {
+        const limit = parseInt(rowsPerPage);
+        dataToShow = originalData.slice(0, limit); // Show limited rows
+      }
+
+      populateTable(dataToShow);
+    }
+
+    // Export to PDF
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFontSize(16);
+      doc.text("Monitoring of Claims - PAS", 10, 10);
+
+      // Extract table content
+      const table = document.getElementById("data-table");
+      const rows = table.querySelectorAll("tbody tr");
+      const headers = Array.from(table.querySelectorAll("thead th")).map(
+        (th) => th.textContent
+      );
+
+      const data = [];
+      rows.forEach((row) => {
+        const cells = row.querySelectorAll("td");
+        data.push(Array.from(cells).map((cell) => cell.textContent));
+      });
+
+      // Add table to PDF
+      doc.autoTable({
+        head: [headers],
+        body: data,
+        startY: 20,
+      });
+
+      // Save PDF
+      doc.save("monitoring-of-claims.pdf");
+    }
+
+    fetchSummary();
+    fetchData();
+  </script>
+</body>
+</html>
