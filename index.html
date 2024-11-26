@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring of Claims - PAS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans leading-normal tracking-normal">
+  <div class="container mx-auto p-6">
+    <!-- Header -->
+    <h1 class="text-3xl font-bold text-gray-700 mb-8">MONITORING OF CLAIMS - PAS</h1>
+
+    <!-- Cards Section -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+      <div class="bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow rounded-lg p-4">
+        <p class="text-sm">Total Claims</p>
+        <h2 class="text-3xl font-bold">120</h2>
+      </div>
+      <div class="bg-gradient-to-r from-red-500 to-red-400 text-white shadow rounded-lg p-4">
+        <p class="text-sm">For Return</p>
+        <h2 class="text-3xl font-bold">15</h2>
+      </div>
+      <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 text-white shadow rounded-lg p-4">
+        <p class="text-sm">For Computation</p>
+        <h2 class="text-3xl font-bold">30</h2>
+      </div>
+      <div class="bg-gradient-to-r from-green-500 to-green-400 text-white shadow rounded-lg p-4">
+        <p class="text-sm">Endorsed</p>
+        <h2 class="text-3xl font-bold">50</h2>
+      </div>
+      <div class="bg-gradient-to-r from-indigo-500 to-indigo-400 text-white shadow rounded-lg p-4">
+        <p class="text-sm">Compliance</p>
+        <h2 class="text-3xl font-bold">20</h2>
+      </div>
+      <div class="bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow rounded-lg p-4">
+        <p class="text-sm">Complied</p>
+        <h2 class="text-3xl font-bold">5</h2>
+      </div>
+    </div>
+
+    <!-- Search and Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <!-- Search Input -->
+      <div class="flex items-center mb-4">
+        <input
+          type="text"
+          id="search"
+          placeholder="Search"
+          class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          oninput="filterTable()"
+        />
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border-collapse border border-gray-200">
+          <thead>
+            <tr class="bg-blue-500 text-white">
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">DRN</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Name</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Gender</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Place</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Month</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Dummy Data -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 border-b border-gray-200 text-sm">123</td>
+              <td class="px-6 py-4 border-b border-gray-200 text-sm">John Doe</td>
+              <td class="px-6 py-4 border-b border-gray-200 text-sm">Male</td>
+              <td class="px-6 py-4 border-b border-gray-200 text-sm">Office A</td>
+              <td class="px-6 py-4 border-b border-gray-200 text-sm">Type 1</td>
+              <td class="px-6 py-4 border-b border-gray-200 text-sm">Jan</td>
+              <td class="px-6 py-4 border-b border-gray-200 text-sm text-yellow-500 font-bold">Pending</td>
+            </tr>
+            <!-- Add more rows as needed -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center mt-4">
+        <div>
+          <label for="rows-per-page" class="mr-2 text-sm">Rows per page:</label>
+          <select
+            id="rows-per-page"
+            class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onchange="changeRowsPerPage()"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Basic search functionality
+    function filterTable() {
+      const searchInput = document.getElementById("search").value.toLowerCase();
+      const rows = document.querySelectorAll("#table-body tr");
+      rows.forEach((row) => {
+        const cells = row.querySelectorAll("td");
+        const rowText = Array.from(cells).map((cell) => cell.textContent.toLowerCase()).join(" ");
+        row.style.display = rowText.includes(searchInput) ? "" : "none";
+      });
+    }
+
+    // Rows per page functionality
+    function changeRowsPerPage() {
+      const rows = document.querySelectorAll("#table-body tr");
+      const rowsPerPage = document.getElementById("rows-per-page").value;
+      rows.forEach((row, index) => {
+        if (rowsPerPage === "all") {
+          row.style.display = "";
+        } else {
+          row.style.display = index < rowsPerPage ? "" : "none";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
