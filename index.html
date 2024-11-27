@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MONITORING OF CLAIMS - PAS</title>
+    <!-- Include Vuetify CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.0/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.0/dist/vuetify.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="app">
+      <v-app>
+        <v-container>
+          <h1 class="text-h4 mb-6">MONITORING OF CLAIMS - PAS</h1>
+
+          <v-text-field
+            v-model="search"
+            label="Search"
+            class="mb-4"
+            clearable
+          ></v-text-field>
+
+          <v-data-table
+            :headers="headers"
+            :items="filteredItems"
+            class="elevation-1"
+            dense
+          >
+            <template v-slot:top>
+              <v-toolbar flat>
+                <v-toolbar-title>Data Table</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-btn color="primary" @click="fetchData">Refresh Data</v-btn>
+                <v-btn color="success" @click="openDialog('add')">Add New</v-btn>
+              </v-toolbar>
+            </template>
+          </v-data-table>
+
+          <!-- Dialog for Add -->
+          <v-dialog v-model="dialog" max-width="500px">
+            <v-card>
+              <v-card-title>
+                <span class="text-h5">Add New Item</span>
+              </v-card-title>
+
+              <v-card-text>
+                <v-form ref="form">
+                  <v-text-field v-model="newItem.DRN" label="DRN" required></v-text-field>
+                  <v-text-field v-model="newItem.Name" label="Name" required></v-text-field>
+                  <v-text-field v-model="newItem.Gender" label="Gender" required></v-text-field>
+                  <v-text-field v-model="newItem.Place" label="Place of Assignment" required></v-text-field>
+                  <v-text-field v-model="newItem.Type" label="Type of Claim" required></v-text-field>
+                  <v-text-field v-model="newItem.Month" label="Month" required></v-text-field>
+                  <v-text-field v-model="newItem.Status" label="Status" required></v-text-field>
+                </v-form>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="red" text @click="closeDialog">Cancel</v-btn>
+                <v-btn color="green" text @click="saveItem">Save</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-container>
+      </v-app>
+    </div>
+
+    <script>
+      new Vue({
+        el: "#app",
+        vuetify: new Vuetify(),
+        data: {
+          search: "",
+          headers: [
+            { text: "DRN", value: "DRN" },
+            { text: "Name", value: "Name" },
+            { text: "Gender", value: "Gender" },
+            { text: "Place", value: "Place" },
+            { text: "Type", value: "Type" },
+            { text: "Month", value: "Month" },
+            { text: "Status", value: "Status" },
+          ],
+          items: [
+            { DRN: "12345", Name: "John Doe", Gender: "Male", Place: "Manila", Type: "Medical", Month: "January", Status: "Approved" },
+            { DRN: "67890", Name: "Jane Smith", Gender: "Female", Place: "Cebu", Type: "Transportation", Month: "February", Status: "Pending" },
+            { DRN: "54321", Name: "Carlos Santos", Gender: "Male", Place: "Davao", Type: "Medical", Month: "March", Status: "Rejected" },
+            { DRN: "98765", Name: "Maria Garcia", Gender: "Female", Place: "Baguio", Type: "Travel", Month: "April", Status: "Approved" }
+          ],
+          dialog: false,
+          newItem: {
+            DRN: "",
+            Name: "",
+            Gender: "",
+            Place: "",
+            Type: "",
+            Month: "",
+            Status: "",
+          }
+        },
+        computed: {
+          filteredItems() {
+            if (!this.search) return this.items;
+            const lowerSearch = this.search.toLowerCase();
+            return this.items.filter((item) =>
+              Object.values(item).some((value) =>
+                String(value).toLowerCase().includes(lowerSearch)
+              )
+            );
+          }
+        },
+        methods: {
+          fetchData() {
+            console.log("Fetching data...");
+            // You can integrate your API call here
+          },
+          openDialog() {
+            this.dialog = true;
+          },
+          closeDialog() {
+            this.dialog = false;
+            this.newItem = {
+              DRN: "",
+              Name: "",
+              Gender: "",
+              Place: "",
+              Type: "",
+              Month: "",
+              Status: "",
+            };
+          },
+          saveItem() {
+            this.items.push(Object.assign({}, this.newItem));
+            this.closeDialog();
+          }
+        },
+        mounted() {
+          this.fetchData();
+        }
+      });
+    </script>
+  </body>
+</html>
