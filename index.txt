@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring of Claims - PAS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" integrity="sha512-wnea99uKIC3TJF7v4eKk4Y+lMz2Mklv18+r4na2Gn1abDRPPOeef95xTzdwGD9e6zXJBteMIhZ1+68QC5byJZw==" crossorigin="anonymous">
+  <!-- Include jsPDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js" integrity="sha512-V/C9Axb8EEL4ix79ERIJmpRd6Mp1rWVSxa2PIBCdCxqhEsfCBWp/R0xJ4U495czhcuDWrGOFYo8+QI3lJ9DK5g==" crossorigin="anonymous"></script>
+  <!-- Include jsPDF AutoTable plugin -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js" integrity="sha512-cxz0XUjHiF9ONWJp1xToc2wvmduE8c0OjCJkdhLhu1NAh5nnujSj0yEdvmoROxn/Fi+rHeKTWD2OG4FlmY1qtg==" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans leading-normal tracking-normal">
+    <div id="loader" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+      <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+    </div>
+  <div class="container mx-auto p-6">
+    <!-- Header -->
+    <h1 class="text-3xl font-bold text-gray-700 mb-8">MONITORING OF CLAIMS - PAS</h1>
+
+    <!-- Cards Section -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8" id="summary-cards">
+      <!-- Summary cards will be dynamically generated -->
+    </div>
+
+    <!-- Search and Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <!-- Export Button -->
+      <div class="flex justify-end mb-4">
+        <button
+          onclick="exportToPDF()"
+          class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600"
+        >
+          Export to PDF
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="flex items-center mb-4">
+        <input
+          type="text"
+          id="search"
+          placeholder="Search"
+          class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          oninput="filterTable()"
+        />
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border-collapse border border-gray-200" id="data-table">
+          <thead>
+            <tr class="bg-blue-500 text-white">
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">DRN</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Name</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Gender</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Place</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Month</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows will be dynamically generated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center mt-4">
+        <div>
+          <label for="rows-per-page" class="mr-2 text-sm">Rows per page:</label>
+          <select
+            id="rows-per-page"
+            class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onchange="changeRowsPerPage()"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Claim Details -->
+  <div id="claim-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden p-4">
+  <div class="bg-white rounded-lg sm:w-1/2 w-90 p-6 shadow-lg h-full overflow-y-auto"> <!-- Set max height and allow scroll -->
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Claim Details</h2>
+    <div id="claim-details" class="space-y-4">
+      <!-- Claim details will be populated dynamically -->
+    </div>
+    <div class="flex justify-end mt-4">
+      <button onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Close</button>
+    </div>
+  </div>
+</div>
+
+  <script>
+    let originalData = [];
+    let currentData = [];
+    function showLoader() {
+  setTimeout(() => {
+    document.getElementById("loader").classList.remove("hidden");
+  }, 1000); // Delay of 300ms
+}
+
+function hideLoader() {
+  setTimeout(() => {
+    document.getElementById("loader").classList.add("hidden");
+  }, 1000); // Delay of 300ms
+}
+
+// Fetch summary data from Google Apps Script
+function fetchSummary() {
+  showLoader(); // Show the loader
+  google.script.run
+    .withSuccessHandler((summary) => {
+      populateSummary(summary);
+      hideLoader(); // Hide the loader when done
+    })
+    .withFailureHandler(() => {
+      alert("Failed to fetch summary.");
+      hideLoader(); // Hide the loader on error
+    })
+    .getReportSummary();
+}
+
+    // Populate the summary cards dynamically
+    function populateSummary(summary) {
+      const summaryCards = document.getElementById("summary-cards");
+      summaryCards.innerHTML = "";
+
+      const summaryData = {
+        "Received Claims (Grand Total)": summary.receivedClaims,
+        "For Return": summary.forReturn,
+        "For Computation": summary.forComputation,
+        "Endorsed to the Budget": summary.endorsed,
+        "Compliance": summary.compliance,
+        "Complied": summary.complied,
+      };
+
+      Object.entries(summaryData).forEach(([key, value]) => {
+        const card = document.createElement("div");
+        card.classList.add(
+          "bg-gradient-to-r",
+          "from-blue-500",
+          "to-blue-400",
+          "text-white",
+          "shadow",
+          "rounded-lg",
+          "p-4"
+        );
+
+        card.innerHTML = ` 
+          <p class="text-sm">${key}</p>
+          <h2 class="text-3xl font-bold">${value}</h2>
+        `;
+        summaryCards.appendChild(card);
+      });
+    }
+
+    // Fetch data for the table
+    function fetchData() {
+      google.script.run
+        .withSuccessHandler(populateData)
+        .getFormattedSheetData();
+    }
+
+    function populateData(data) {
+      originalData = data;
+      currentData = data.slice(0, 10); // Default to 10 rows
+      populateTable(currentData);
+    }
+
+    function populateTable(data) {
+  const tableBody = document.getElementById("table-body");
+  tableBody.innerHTML = "";
+  
+  data.forEach((row) => {
+    const tr = document.createElement("tr");
+    tr.classList.add("hover:bg-gray-50");
+
+    tr.innerHTML = `
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.DRN}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Name}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Gender}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Place}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Type}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Month}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm">${row.Status}</td>
+      <td class="px-6 py-4 border-b border-gray-200 text-sm text-blue-500 cursor-pointer" onclick="viewClaimDetails('${row.DRN}')">View</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+    // Filter table based on search input
+    function filterTable() {
+      const searchInput = document.getElementById("search").value.toLowerCase();
+
+      // Filter table data
+      const filteredData = originalData.filter((row) =>
+        Object.values(row).some((value) =>
+          String(value).toLowerCase().includes(searchInput)
+        )
+      );
+      populateTable(filteredData);
+    }
+
+    // View Claim Details (open modal)
+    function viewClaimDetails(drn) {
+      const claim = originalData.find(row => row.DRN === drn);
+      const detailsContainer = document.getElementById("claim-details");
+
+      detailsContainer.innerHTML = `
+        <p><strong>DRN:</strong> ${claim.DRN || 'N/A'}</p>
+        <p><strong>Name:</strong> ${claim.Name || 'N/A'}</p>
+        <p><strong>Gender:</strong> ${claim.Gender || 'N/A'}</p>
+        <p><strong>Place:</strong> ${claim.Place || 'N/A'}</p>
+        <p><strong>Type:</strong> ${claim.Type || 'N/A'}</p>
+        <p><strong>Month:</strong> ${claim.Month || 'N/A'}</p>
+        <p><strong>Status:</strong> ${claim.Status || 'N/A'}</p>
+        <p><strong>Receive Date:</strong> ${claim.Rdate || 'N/A'}</p>
+        <p><strong>Focal:</strong> ${claim.Focal || 'N/A'}</p>
+        <p><strong>Remarks:</strong> ${claim.Remarks || 'N/A'}</p>
+        <p><strong>Date Remarks:</strong> ${claim.Dremarks || 'N/A'}</p>
+        <p><strong>Payroll In-charge:</strong> ${claim.Pcharge || 'N/A'}</p>
+        <p><strong>Date:</strong> ${claim.Date || 'N/A'}</p>
+        <p><strong>Formatted DRN:</strong> ${claim.Sdrn || 'N/A'}</p>
+        <p><strong>Subject:</strong> ${claim.Subject || 'N/A'}</p>
+      `;
+
+      document.getElementById("claim-details-modal").classList.remove("hidden");
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById("claim-details-modal").classList.add("hidden");
+    }
+
+    // Change rows per page
+    function changeRowsPerPage() {
+      const rowsPerPage = document.getElementById("rows-per-page").value;
+      let dataToShow = [];
+
+      if (rowsPerPage === "all") {
+        dataToShow = originalData; // Show all data
+      } else {
+        const limit = parseInt(rowsPerPage);
+        dataToShow = originalData.slice(0, limit); // Show limited rows
+      }
+
+      populateTable(dataToShow);
+    }
+
+    // Export to PDF excluding "Actions" column
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFontSize(16);
+      doc.text("Monitoring of Claims - PAS", 10, 10);
+
+      // Extract table content
+      const table = document.getElementById("data-table");
+      const rows = table.querySelectorAll("tbody tr");
+      const headers = Array.from(table.querySelectorAll("thead th")).slice(0, -1).map(th => th.textContent); // Exclude "Actions"
+      
+      const data = [];
+      rows.forEach((row) => {
+        const cells = row.querySelectorAll("td");
+        const rowData = Array.from(cells).slice(0, -1).map(cell => cell.textContent); // Exclude "Actions"
+        data.push(rowData);
+      });
+
+      // Add table to PDF
+      doc.autoTable({
+        head: [headers],
+        body: data,
+        startY: 20,
+      });
+
+      // Save PDF
+      doc.save("monitoring-of-claims.pdf");
+    }
+
+    fetchSummary();
+    fetchData();
+  </script>
+</body>
+</html>

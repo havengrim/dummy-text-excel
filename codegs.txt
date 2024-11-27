@@ -1,0 +1,85 @@
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index.html')
+    .setTitle('MONITORING OF CLAIMS - PAS');
+}
+
+function getReportSummary() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName("REPORT");
+  if (!sheet) return {};
+
+  const data = sheet.getDataRange().getValues();
+  return {
+    receivedClaims: data[6][1],
+    forReturn: data[6][2],
+    forComputation: data[6][3],
+    endorsed: data[6][5],
+    compliance: data[6][4],
+    complied: data[6][6],
+  };
+}
+
+function getFormattedSheetData() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName("MONITORING OF CLAIMS");
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+  const rows = data.slice(6); // Skip the header rows
+
+  return rows.map(row => {
+    const rdate = new Date(row[6]); // Date field
+    const formattedRdate = isValidDate(rdate) ? formatDate(rdate) : ''; // Format date
+    
+    const dremarks = new Date(row[9]); // Date Remarks field
+    const formattedDremarks = isValidDate(dremarks) ? formatDate(dremarks) : ''; // Format Date Remarks
+
+    const date = new Date(row[11]); // Date Remarks field
+    const formattedDate = isValidDate(date) ? formatDate(date) : ''; // Format Date Remarks
+    const Pdate = new Date(row[14]); // Date Remarks field
+    const formattedPdate = isValidDate(Pdate) ? formatDate(Pdate) : ''; // Format Date Remarks
+    
+    
+    return {
+      DRN: row[0],
+      Name: row[1],
+      Gender: row[2],
+      Place: row[3],
+      Type: row[4],
+      Month: row[5],
+      Status: row[21],  
+      Rdate: formattedRdate,
+      Focal: row[7],
+      Remarks: row[8],
+      Dremarks: formattedDremarks,
+      Pcharge: row[10],
+      Date: formattedDate,
+      Sdrn: row[12],
+      Subject: formattedPdate,
+    };
+  });
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  
+  const ampm = hours >= 12 ? 'PM' : 'AM'; // Determine AM or PM
+  hours = hours % 12; // Convert to 12-hour format
+  hours = hours ? hours : 12; // Handle 0 as 12 (for midnight)
+  hours = hours.toString().padStart(2, '0'); // Format hour as two digits
+  
+  return `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
+}
+
+
+function isValidDate(date) {
+  return date instanceof Date && !isNaN(date); // Check for valid date
+}
+
+
+
